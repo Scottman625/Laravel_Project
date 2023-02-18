@@ -8,15 +8,21 @@ use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    //
-    public function actuallyUpdate(Post $post, Request $request){
+    public function search($term) {
+        $posts = Post::search($term)->get();
+        $posts->load('user:id,username,avatar');
+        return $posts;
+        //return Post::where('title', 'LIKE', '%' . $term . '%')->orWhere('body', 'LIKE', '%' . $term . '%')->with('user:id,username,avatar')->get();
+    }
+
+    public function actuallyUpdate(Post $post, Request $request) {
         $incomingFields = $request->validate([
             'title' => 'required',
             'body' => 'required'
         ]);
 
-        $incomingFields['title'] = strip_tags(($incomingFields['title']));
-        $incomingFields['body'] = strip_tags(($incomingFields['body']));
+        $incomingFields['title'] = strip_tags($incomingFields['title']);
+        $incomingFields['body'] = strip_tags($incomingFields['body']);
 
         $post->update($incomingFields);
 
@@ -27,29 +33,24 @@ class PostController extends Controller
         return view('edit-post', ['post' => $post]);
     }
 
-    public function delete(Post $post){
-        if(auth()->user()->cannot('delete', $post)){
-            return 'You cannot do that';
-        }
+    public function delete(Post $post) {
         $post->delete();
-
         return redirect('/profile/' . auth()->user()->username)->with('success', 'Post successfully deleted.');
     }
 
-    public function viewSinglePost(Post $post){
-        
+    public function viewSinglePost(Post $post) {
         $post['body'] = strip_tags(Str::markdown($post->body), '<p><ul><ol><li><strong><em><h3><br>');
-        return view('single-post', ['post'=>$post]);
+        return view('single-post', ['post' => $post]);
     }
 
-    public function storeNewPost(Request $request){
+    public function storeNewPost(Request $request) {
         $incomingFields = $request->validate([
             'title' => 'required',
             'body' => 'required'
         ]);
 
-        $incomingFields['title'] = strip_tags(($incomingFields['title']));
-        $incomingFields['body'] = strip_tags(($incomingFields['body']));
+        $incomingFields['title'] = strip_tags($incomingFields['title']);
+        $incomingFields['body'] = strip_tags($incomingFields['body']);
         $incomingFields['user_id'] = auth()->id();
 
         $newPost = Post::create($incomingFields);
@@ -57,7 +58,7 @@ class PostController extends Controller
         return redirect("/post/{$newPost->id}")->with('success', 'New post successfully created.');
     }
 
-    public function showCreateForm(){
+    public function showCreateForm() {
         return view('create-post');
     }
 }
